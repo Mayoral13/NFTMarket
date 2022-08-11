@@ -3,12 +3,14 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
 contract NFT is ERC721URIStorage{
-    constructor()
+    constructor(address _marketaddress)
     ERC721("HEDERA","H-DERA"){
+        Marketaddress = _marketaddress;
     }
 
     using Counters for Counters.Counter;
     Counters.Counter private _tokenId;
+    address private Marketaddress;
 
     
     mapping(address => uint[])NFTOwned;
@@ -27,8 +29,10 @@ contract NFT is ERC721URIStorage{
        NFTOwner[id][msg.sender] = true;
        NFTOwned[msg.sender].push(id);
        NFTOwnerId[id] = msg.sender;
+       _approve(Marketaddress,id);
        emit NFTMinted(msg.sender,block.timestamp);
        return id;
+       
        
     }
 

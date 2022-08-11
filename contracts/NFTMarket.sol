@@ -1,6 +1,5 @@
 pragma solidity ^0.8.11;
 import "./NFT.sol";
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -19,6 +18,7 @@ contract NFTMarket is ReentrancyGuard,Ownable{
         uint marketId;
         uint tokenId;
         uint duration;
+        address minter;
         address payable seller;
         address payable buyer;
         bool sold;
@@ -30,23 +30,30 @@ contract NFTMarket is ReentrancyGuard,Ownable{
        event NFTListingCanceled(uint marketId,uint tokenId,address indexed by);
 
        mapping(uint => Listing)private listing;
+       mapping(address => uint[])IDListed;
        mapping(uint => address)private IDListing;
 
     function ListNFT(address _nftaddr,uint _price,uint _tokenid,uint _duration) nonReentrant public payable{
         require(msg.value == listingFee,"Pay 0.05 ether to list item");
+        require(_price > 1,"Set price to at least 1 wei");
         require(NFT(_nftaddr).IsNFTOwner(msg.sender,_tokenid) == true,"You do not own the NFT");
         _marketId.increment();
         uint id = _marketId.current();
+        address seller = NFT(_nftaddr).RevealUserByID(_tokenid);
         listing[id].price = _price;
+        listing[id].NFTAddr = _nftaddr;
         listing[id].marketId = id;
         listing[id].tokenId = _tokenid;
+        listing[id].minter = seller;
         listing[id].duration = _duration.add(block.timestamp);
         listing[id].seller = payable(msg.sender);
         IDListing[id] = msg.sender;
-        IERC721(_nftaddr).transferFrom(msg.sender,address(this),_tokenid);
+        IDListed[msg.sender].push(id);
+        NFT(_nftaddr).transferFrom(msg.sender,address(this),_tokenid);
         MarketID.push(id);
         emit NFTListed(_nftaddr,_price,id,_tokenid,_duration.add(block.timestamp),msg.sender);
     }
+    
 
     function BuyNFT(uint _marketID)public payable nonReentrant{
         require(listing[_marketID].duration > block.timestamp,"Listing time exceeded");
@@ -62,7 +69,7 @@ contract NFTMarket is ReentrancyGuard,Ownable{
         address payable _seller = listing[_marketID].seller;
         listing[_marketID].sold = true;
         listing[_marketID].bought = block.timestamp;
-        IERC721(_nftaddr).transferFrom(address(this),msg.sender,tokenId);
+        NFT(_nftaddr).transferFrom(address(this),msg.sender,tokenId);
         _seller.transfer(recieve);
         emit NFTPurchased(listing[_marketID].price,_marketID,tokenId,_seller,msg.sender);
     }
@@ -86,10 +93,16 @@ contract NFTMarket is ReentrancyGuard,Ownable{
         uint tokenId = listing[_marketID].tokenId;
         address _nftaddr = listing[_marketID].NFTAddr;
         listing[_marketID].canceled = true;
-        MarketID.pop();
-        IERC721(_nftaddr).transferFrom(address(this),msg.sender,tokenId);
+        IDListed[msg.sender].pop();
+        NFT(_nftaddr).transferFrom(address(this),msg.sender,tokenId);
         emit NFTListingCanceled(_marketID,tokenId,msg.sender);
     }
+    function RevealAvailableID()public view returns(uint[]memory){
+        return MarketID;
+    }
+    function RevealMyListedID()public view returns(uint[]memory){
+        return IDListed[msg.sender];
+    }  
     
 }
 
