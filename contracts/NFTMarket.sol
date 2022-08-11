@@ -56,6 +56,7 @@ contract NFTMarket is ReentrancyGuard,Ownable{
     
 
     function BuyNFT(uint _marketID)public payable nonReentrant{
+        require(msg.sender != listing[_marketID].seller,"You cannot buy your item");
         require(listing[_marketID].duration > block.timestamp,"Listing time exceeded");
         require(msg.value == listing[_marketID].price,"Pay Item price");
         require(listing[_marketID].seller != address(0),"Item does not exist");
@@ -67,6 +68,7 @@ contract NFTMarket is ReentrancyGuard,Ownable{
         uint tokenId = listing[_marketID].tokenId;
         address _nftaddr = listing[_marketID].NFTAddr;
         address payable _seller = listing[_marketID].seller;
+        listing[_marketID].buyer = payable(msg.sender);
         listing[_marketID].sold = true;
         listing[_marketID].bought = block.timestamp;
         NFT(_nftaddr).transferFrom(address(this),msg.sender,tokenId);
@@ -90,6 +92,7 @@ contract NFTMarket is ReentrancyGuard,Ownable{
     function CancelListing(uint _marketID)public nonReentrant{
         require(listing[_marketID].seller != address(0),"Item does not exist");
         require(IDListing[_marketID] == msg.sender,"You are not the Lister");
+        require(listing[_marketID].sold == false,"Item has been bought");
         uint tokenId = listing[_marketID].tokenId;
         address _nftaddr = listing[_marketID].NFTAddr;
         listing[_marketID].canceled = true;
@@ -105,5 +108,6 @@ contract NFTMarket is ReentrancyGuard,Ownable{
     }  
     
 }
+
 
 
