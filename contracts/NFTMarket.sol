@@ -36,10 +36,10 @@ contract NFTMarket is ReentrancyGuard,Ownable{
     function ListNFT(address _nftaddr,uint _price,uint _tokenid,uint _duration) nonReentrant public payable{
         require(msg.value == listingFee,"Pay 0.05 ether to list item");
         require(_price > 1,"Set price to at least 1 wei");
-        require(NFT(_nftaddr).IsNFTOwner(msg.sender,_tokenid) == true,"You do not own the NFT");
+        require(NFT(_nftaddr).IsNFTMinter(msg.sender,_tokenid) == true,"You do not own the NFT");
         _marketId.increment();
         uint id = _marketId.current();
-        address seller = NFT(_nftaddr).RevealUserByID(_tokenid);
+        address seller = NFT(_nftaddr).RevealMinterByID(_tokenid);
         listing[id].price = _price;
         listing[id].NFTAddr = _nftaddr;
         listing[id].marketId = id;
@@ -105,6 +105,9 @@ contract NFTMarket is ReentrancyGuard,Ownable{
     }
     function RevealMyListedID()public view returns(uint[]memory){
         return IDListed[msg.sender];
+    }
+    function Withdraw(address payable _to,uint amount)onlyOwner public{
+        _to.transfer(amount);
     }  
     
 }

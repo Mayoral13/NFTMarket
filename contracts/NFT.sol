@@ -13,12 +13,12 @@ contract NFT is ERC721URIStorage{
     address private Marketaddress;
 
     
-    mapping(address => uint[])NFTOwned;
+    mapping(address => uint[])NFTMinted;
     mapping(uint => address)NFTOwnerId;
-    mapping(uint => mapping(address =>bool))NFTOwner; 
+    mapping(uint => mapping(address =>bool))NFTMinter; 
     
 
-    event NFTMinted(address indexed _by,uint _time);
+    event NFTMint(address indexed _by,uint _time);
 
 
     function MintNFT(string memory _tokenURI)public returns(uint){
@@ -26,28 +26,26 @@ contract NFT is ERC721URIStorage{
         uint id = _tokenId.current();
         _safeMint(msg.sender,id);
         _setTokenURI(id, _tokenURI);
-       NFTOwner[id][msg.sender] = true;
-       NFTOwned[msg.sender].push(id);
+       NFTMinter[id][msg.sender] = true;
+       NFTMinted[msg.sender].push(id);
        NFTOwnerId[id] = msg.sender;
        _approve(Marketaddress,id);
-       emit NFTMinted(msg.sender,block.timestamp);
+       emit NFTMint(msg.sender,block.timestamp);
        return id;
-       
-       
     }
 
     function RevealTokensID()public view returns(uint[]memory){
-        return NFTOwned[msg.sender];
+        return NFTMinted[msg.sender];
     }
-    function RevealUserByID(uint _id)public view returns(address){
+    function RevealMinterByID(uint _id)public view returns(address){
         return NFTOwnerId[_id];
     }
 
-    function RevealTokenUserID(address _user)public view returns(uint[]memory){
-        return NFTOwned[_user];
+    function RevealTokenMinterID(address _user)public view returns(uint[]memory){
+        return NFTMinted[_user];
     }
-    function IsNFTOwner(address _user,uint _tokenid)public view returns(bool success){
-        return NFTOwner[_tokenid][_user];
+    function IsNFTMinter(address _user,uint _tokenid)public view returns(bool success){
+        return NFTMinter[_tokenid][_user];
     }
 
 }
